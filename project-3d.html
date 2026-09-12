@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMSAR 3D Showcase</title>
+    <link rel="stylesheet" href="/assets/css/project.css">
+</head>
+<body style="overflow:hidden;margin:0;padding:0;width:100vw;height:100vh;">
+         <div class="bg-glow"></div>
+    <div class="section-header text-center reveal active">
+        <span class="badge active">Proyektler </span>
+    </div>
+
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div style="font-size:12px;letter-spacing:3px;color:#94a3b8;">3D MODELLƏR YÜKLƏNİR...</div>
+    </div>
+
+    <div class="content-card">
+        <div class="slide-tag" id="slide-tag">LAYİHƏ 01</div>
+        <h1 class="slide-title" id="slide-title">EMSAR RX</h1>
+        <p class="slide-desc" id="slide-desc">Modern texnoloji idarəetmə və yüksək performans həlli.</p>
+        <a href="#" class="cta-btn">Ətraflı Məlumat <span>&rarr;</span></a>
+    </div>
+
+    <div class="controls-wrapper">
+        <div class="slide-counter">
+            <span id="current-index">01</span> / <span style="color:#64748b;font-size:14px;">03</span>
+        </div>
+        <div class="nav-buttons">
+            <button class="nav-btn" id="prev-btn" aria-label="Əvvəlki">
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <button class="nav-btn" id="next-btn" aria-label="Növbəti">
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+        </div>
+    </div>
+
+    <canvas id="webgl-canvas"></canvas>
+   
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="/assets/js/project.js"></script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMSAR — 3D Showcase</title>
+
+    <!-- Three.js, OrbitControls, GLTF & Draco Oxuyucular və GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: #07090e;
+            color: #ffffff;
+            width: 100vw;
+            height: 100vh;
+            user-select: none;
+        }
+
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            outline: none;
+            cursor: grab;
+        }
+
+        #webgl-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Gradient Arxa Fon İşığı */
+        .bg-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70vw;
+            height: 70vh;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, rgba(7, 9, 14, 0) 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Sol Tərəf - Mətn Kartı */
+        .content-card {
+            position: fixed;
+            left: 60px;
+            bottom: 60px;
+            max-width: 440px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .slide-tag {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #3b82f6;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slide-tag::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px #3b82f6;
+        }
+
+        .slide-title {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -1px;
+            margin-bottom: 14px;
+            background: linear-gradient(180deg, #ffffff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .slide-desc {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #8da2be;
+            margin-bottom: 22px;
+        }
+
+        .cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 28px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            transition: all 0.3s ease;
+        }
+
+        .cta-btn:hover {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Sağ Tərəf - Slayder Naviqasiya Oxları */
+        .controls-wrapper {
+            position: fixed;
+            right: 60px;
+            bottom: 60px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            z-index: 10;
+        }
+
+        .slide-counter {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #64748b;
+        }
+
+        .slide-counter span {
+            color: #ffffff;
+            font-size: 18px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.08);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .nav-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* İnteraktivlik İpucu */
+        .drag-hint {
+            position: fixed;
+            top: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: #475569;
+            text-transform: uppercase;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Yüklənmə Ekranı */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #07090e;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            transition: opacity 0.6s ease;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+    <div class="drag-hint">Modeli fırlatmaq üçün siçanla sürükləyin</div>
+
+    <!-- Yüklənmə Ekranı -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div style="font-size: 12px; letter-spacing: 3px; color: #94a3b8;">3D MODELLƏR YÜKLƏNİR...</div>
+    </div>
+
+    <!-- Mətn Kartı -->
+    <div class="content-card">
+        <div class="slide-tag" id="slide-tag">LAYİHƏ 01</div>
+        <h1 class="slide-title" id="slide-title">EMSAR RX</h1>
+        <p class="slide-desc" id="slide-desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Modern texnoloji idarəetmə və yüksək performans həlli.</p>
+        <a href="#" class="cta-btn">Ətraflı Məlumat <span>→</span></a>
+    </div>
+
+    <!-- Sağ Slayder İdarəetməsi -->
+    <div class="controls-wrapper">
+        <div class="slide-counter">
+            <span id="current-index">01</span> / <span style="color: #64748b; font-size: 14px;">04</span>
+        </div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="prevSlide()" aria-label="Əvvəlki">
+                <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <button class="nav-btn" onclick="nextSlide()" aria-label="Növbəti">
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <script>
+        // --- 1. SLAYD MƏLUMATLARI ---
+        const slidesData = [
+            {
+                tag: "LAYİHƏ 01",
+                title: "EMSAR RX",
+                desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Modern texnoloji idarəetmə və yüksək performans həlli.",
+                modelPath: "models/mac-hr.glb",
+                scale: 10,
+                rotationY: Math.PI + 34.3
+            },
+            {
+                tag: "E-TİCARƏT PLATFORMASI",
+                title: "Çantam.az",
+                desc: "Onlayn satış platforması — modern stack üzərində qurulan B2C marketplace.",
+                modelPath: "models/iphone-17-cantam.glb",
+                scale: 10,
+                rotationY: Math.PI
+            },
+            {
+                tag: "BULUD XİDMƏTLƏRİ",
+                title: "EMSAR Cloud",
+                desc: "Yüksək sürətli təhlükəsiz serverlər və qlobal məlumat şəbəkəsi idarəetmə sistemi.",
+                modelPath: "models/mac-hr.glb",
+                scale: 10,
+                rotationY: Math.PI + 34.3
+            },
+            {
+                tag: "MOBİL TƏTBİQ",
+                title: "Çantam Mobile",
+                desc: "iOS və Android üçün optimallaşdırılmış sürətli və rahat mobil alış-veriş təcrübəsi.",
+                modelPath: "models/iphone-17-cantam.glb",
+                scale: 8,
+                rotationY: Math.PI
+            }
+        ];
+
+        let currentIndex = 0;
+        let isTransitioning = false;
+        const loadedModels = [];
+
+        // --- 2. SƏHNƏ, KAMERA VƏ MƏRKƏZLƏŞDİRİLMİŞ ORBIT CONTROLS ---
+        const canvas = document.querySelector('#webgl-canvas');
+        const scene = new THREE.Scene();
+
+        // Kamera tam mərkəzə (0, 0, 0) baxır
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 3.2);
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // OrbitControls TAM MƏRKƏZƏ (0,0,0) Fokuslanır
+        const controls = new THREE.OrbitControls(camera, canvas);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enablePan = false;
+        controls.target.set(0, 0, 0); // <-- ƏSAS MƏRKƏZ
+        controls.minDistance = 1.2;
+        controls.maxDistance = 7.0;
+
+        // --- 3. STUDIO İŞIQLANDIRMASI ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        mainLight.position.set(5, 8, 5);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+
+        const rimLight = new THREE.DirectionalLight(0x3b82f6, 3.0);
+        rimLight.position.set(-5, -2, -5);
+        scene.add(rimLight);
+
+        const softLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        softLight.position.set(-5, 4, 3);
+        scene.add(softLight);
+
+        // Zəmin Kölgəsi
+        const shadowPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(15, 15),
+            new THREE.ShadowMaterial({ opacity: 0.3 })
+        );
+        shadowPlane.rotation.x = -Math.PI / 2;
+        shadowPlane.position.y = -1.2;
+        shadowPlane.receiveShadow = true;
+        scene.add(shadowPlane);
+
+        // 3D SƏHNƏ QRUPU (TAM 0, 0, 0 KOORDİNATINDA)
+        const stageGroup = new THREE.Group();
+        stageGroup.position.set(0, 0, 0); // <-- Ekranın tam tən ortası!
+        scene.add(stageGroup);
+
+        // --- 4. MODELLƏRİN YÜKLƏNMƏSİ VƏ 100% TRUE CENTER PIVOT ---
+        const dracoLoader = new THREE.DRACOLoader();
+        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+        const gltfLoader = new THREE.GLTFLoader();
+        gltfLoader.setDRACOLoader(dracoLoader);
+
+        let loadedCount = 0;
+
+        slidesData.forEach((slide, index) => {
+            gltfLoader.load(
+                slide.modelPath,
+                (gltf) => {
+                    const rawModel = gltf.scene;
+
+                    // Koordinatları və transformasiyaları dərhal yeniləyirik
+                    rawModel.updateMatrixWorld(true);
+
+                    // Modelin dəqiq həndəsi mərkəzini hesablayırıq
+                    const box = new THREE.Box3().setFromObject(rawModel);
+                    const center = new THREE.Vector3();
+                    box.getCenter(center);
+
+                    // Xüsusi Pivot Qrupu
+                    const pivot = new THREE.Group();
+                    
+                    // Modeli pivotun tam tən ortasına (0, 0, 0) oturduruq
+                    rawModel.position.set(-center.x, -center.y, -center.z);
+                    pivot.add(rawModel);
+
+                    // Teksturaların işıqdan yanmaması düzəlişi
+                    rawModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+
+                            const mat = child.material;
+                            if (mat && (mat.emissiveMap || (mat.name && mat.name.toLowerCase().includes('screen')) || (mat.name && mat.name.toLowerCase().includes('display')))) {
+                                const screenTexture = mat.emissiveMap || mat.map;
+                                if (screenTexture) {
+                                    screenTexture.encoding = THREE.sRGBEncoding;
+                                    screenTexture.needsUpdate = true;
+                                }
+                                child.material = new THREE.MeshBasicMaterial({
+                                    map: screenTexture,
+                                    toneMapped: false
+                                });
+                                child.castShadow = false;
+                                child.receiveShadow = false;
+                            }
+                        }
+                    });
+
+                    // Başlanğıc parametrləri Pivot-a tətbiq olunur
+                    pivot.scale.set(0, 0, 0);
+                    pivot.rotation.y = slide.rotationY;
+                    pivot.visible = false;
+
+                    stageGroup.add(pivot);
+                    loadedModels[index] = pivot; // <-- Mərkəzi oxdan fırlanan obyekt
+
+                    loadedCount++;
+                    if (loadedCount === slidesData.length) {
+                        const loaderEl = document.getElementById('loading-screen');
+                        if (loaderEl) {
+                            loaderEl.style.opacity = '0';
+                            setTimeout(() => loaderEl.remove(), 600);
+                        }
+                        showModel(0);
+                    }
+                },
+                undefined,
+                (err) => console.error("Model yüklənmə xətası:", slide.modelPath, err)
+            );
+        });
+
+        // --- 5. SLAYD DƏYİŞMƏ ANİMASİYASI (GSAP) ---
+        function showModel(index) {
+            const model = loadedModels[index];
+            const data = slidesData[index];
+
+            model.visible = true;
+            model.scale.set(0.001, 0.001, 0.001);
+            model.rotation.y = data.rotationY - 1.2;
+
+            gsap.to(model.scale, {
+                x: data.scale,
+                y: data.scale,
+                z: data.scale,
+                duration: 1.4,
+                ease: "power3.out"
+            });
+
+            gsap.to(model.rotation, {
+                y: data.rotationY,
+                duration: 1.4,
+                ease: "power3.out",
+                onComplete: () => {
+                    isTransitioning = false;
+                }
+            });
+        }
+
+        function changeSlide(nextIndex) {
+            if (isTransitioning || loadedModels.length < slidesData.length) return;
+            isTransitioning = true;
+
+            const currentModel = loadedModels[currentIndex];
+
+            // Mövcud Modelin Fırlanaraq İtməsi
+            gsap.to(currentModel.scale, {
+                x: 0,
+                y: 0,
+                z: 0,
+                duration: 0.8,
+                ease: "power2.in"
+            });
+
+            gsap.to(currentModel.rotation, {
+                y: currentModel.rotation.y + 1.2,
+                duration: 0.8,
+                ease: "power2.in",
+                onComplete: () => {
+                    currentModel.visible = false;
+                    currentIndex = nextIndex;
+
+                    // Yeni Modeli Ekrana Gətiririk
+                    showModel(currentIndex);
+                }
+            });
+
+            // Mətnlərin Fade Animasiyası
+            gsap.to([".slide-tag", ".slide-title", ".slide-desc"], {
+                opacity: 0,
+                y: -15,
+                duration: 0.4,
+                stagger: 0.05,
+                onComplete: () => {
+                    document.getElementById('slide-tag').innerText = slidesData[nextIndex].tag;
+                    document.getElementById('slide-title').innerText = slidesData[nextIndex].title;
+                    document.getElementById('slide-desc').innerText = slidesData[nextIndex].desc;
+                    document.getElementById('current-index').innerText = `0${nextIndex + 1}`;
+
+                    gsap.fromTo([".slide-tag", ".slide-title", ".slide-desc"], 
+                        { opacity: 0, y: 15 },
+                        { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: "power2.out" }
+                    );
+                }
+            });
+        }
+
+        function nextSlide() {
+            const next = (currentIndex + 1) % slidesData.length;
+            changeSlide(next);
+        }
+
+        function prevSlide() {
+            const prev = (currentIndex - 1 + slidesData.length) % slidesData.length;
+            changeSlide(prev);
+        }
+
+        // Klaviaturanın Sağ və Sol Oxları ilə İdarəetmə
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        // --- 6. RENDER DÖVRÜ ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            controls.update();
+
+            // Zərif Avtomatik Fırlanma
+            if (!controls.state == -1 && loadedModels[currentIndex]) {
+                loadedModels[currentIndex].rotation.y += 0.002;
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Pəncərə Ölçüsü Dəyişdikdə
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
