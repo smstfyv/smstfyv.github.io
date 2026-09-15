@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EMSAR 3D Showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/project.css">
 </head>
 <body style="overflow:hidden;margin:0;padding:0;width:100vw;height:100vh;">
          <div class="bg-glow"></div>
-    <div class="section-header text-center reveal active">
-        <span class="badge active">Proyektler </span>
-    </div>
+    
 
     <div id="loading-screen">
         <div class="spinner"></div>
@@ -18,10 +19,18 @@
     </div>
 
     <div class="content-card">
-        <div class="slide-tag" id="slide-tag">LAYİHƏ 01</div>
+        <div class="slide-tag" id="slide-tag">EMSAR RX</div>
         <h1 class="slide-title" id="slide-title">EMSAR RX</h1>
-        <p class="slide-desc" id="slide-desc">Modern texnoloji idarəetmə və yüksək performans həlli.</p>
-        <a href="#" class="cta-btn">Ətraflı Məlumat <span>&rarr;</span></a>
+        <p class="slide-desc" id="slide-desc">Mühasibatlıq, anbar və kadr uçotunun kompleks idarə edilməsi sistemi.</p>
+        <a href="/pages/emsar-rx/index.html" class="cta-btn" id="slide-cta" target="_parent" data-i18n="projects.cta">Ətraflı Məlumat <span>&rarr;</span></a>
+    </div>
+
+    <div class="model-blur-overlay" id="model-blur-overlay">
+        <div class="coming-soon-text">
+            <div class="cs-line" data-project-lang="az">TEZLİKLƏ</div>
+            <div class="cs-line" data-project-lang="en">COMING SOON</div>
+            <div class="cs-line" data-project-lang="ru">СКОРО</div>
+        </div>
     </div>
 
     <div class="controls-wrapper">
@@ -44,6 +53,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="/assets/js/project.js"></script>
 </body>

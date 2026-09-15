@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Model — Scroll Camera</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #07090e;
+            color: #fff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+        #loading-screen {
+            position: fixed; inset: 0; background: #07090e; z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px;
+            transition: opacity 0.6s ease;
+        }
+        #loading-screen.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.1); border-top-color: #3b82f6;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading-screen .text { font-size: 12px; letter-spacing: 3px; color: #94a3b8; }
+
+        #webgl-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; cursor: grab;
+        }
+        #webgl-canvas:active { cursor: grabbing; }
+
+        #scroll-hint {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 10; text-align: center; pointer-events: none; transition: opacity 0.4s;
+        }
+        #scroll-hint .arrow {
+            width: 24px; height: 24px; margin: 0 auto 6px;
+            border-left: 2px solid rgba(255,255,255,0.4); border-bottom: 2px solid rgba(255,255,255,0.4);
+            transform: rotate(-45deg); animation: bounce 1.4s infinite;
+        }
+        #scroll-hint .label { font-size: 11px; letter-spacing: 3px; color: #64748b; }
+        @keyframes bounce {
+            0%, 100% { transform: rotate(-45deg) translateY(0); opacity: 0.4; }
+            50% { transform: rotate(-45deg) translateY(6px); opacity: 1; }
+        }
+
+        #progress-bar {
+            position: fixed; right: 0; top: 0; width: 3px; height: 100%;
+            background: rgba(255,255,255,0.05); z-index: 10;
+        }
+        #progress-fill {
+            width: 100%; height: 0%; background: #3b82f6;
+            transition: height 0.1s linear;
+        }
+
+        #debug-panel {
+            position: fixed; top: 12px; left: 12px; z-index: 20;
+            background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 12px 16px; font-size: 11px;
+            color: #94a3b8; font-family: monospace; line-height: 1.6; pointer-events: none;
+        }
+        #debug-panel .val { color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div class="text" id="loader-text">MODEL YÜKLƏNİR...</div>
+    </div>
+
+    <canvas id="webgl-canvas"></canvas>
+
+    <div id="scroll-hint">
+        <div class="arrow"></div>
+        <div class="label">SCROLL</div>
+    </div>
+
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+
+    <div id="debug-panel">
+        <div>Meshes: <span class="val" id="dbg-meshes">—</span></div>
+        <div>Materials: <span class="val" id="dbg-materials">—</span></div>
+        <div>Progress: <span class="val" id="dbg-scroll">0%</span></div>
+        <div>Camera: <span class="val" id="dbg-cam">—</span></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script>
+    (function () {
+        var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        var pixelRatio = isMobile ? 1 : Math.min(window.devicePixelRatio, 2);
+        var canvas = document.getElementById('webgl-canvas');
+        var loaderEl = document.getElementById('loading-screen');
+        var loaderText = document.getElementById('loader-text');
+        var progressFill = document.getElementById('progress-fill');
+        var dbgMaterials = document.getElementById('dbg-materials');
+        var dbgScroll = document.getElementById('dbg-scroll');
+        var dbgCam = document.getElementById('dbg-cam');
+        var dbgMeshes = document.getElementById('dbg-meshes');
+
+        var scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x07090e);
+        scene.fog = new THREE.FogExp2(0x07090e, 0.008);
+
+        var camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 500);
+
+        var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: !isMobile });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(pixelRatio);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        var dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+        var rimLight = new THREE.DirectionalLight(0x4488ff, 2.5);
+        rimLight.position.set(-8, -2, -8);
+        scene.add(rimLight);
+        var fillLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        fillLight.position.set(-3, 5, -2);
+        scene.add(fillLight);
+
+        var modelGroup = new THREE.Group();
+        scene.add(modelGroup);
+
+        var dracoLoader = new THREE.DRACOLoader();
+        dracoLoader.setDecoderPath('./draco/');
+        var gltfLoader = new THREE.GLTFLoader();
+        gltfLoader.setDRACOLoader(dracoLoader);
+
+        var camCurve = null;
+        var lookAtCurve = null;
+        var progress = 0;
+        var targetProgress = 0;
+        var modelCenter = new THREE.Vector3();
+        var modelMaxDim = 1;
+
+        function logModelInfo(sc) {
+            var meshCount = 0, materialSet = {};
+            sc.traverse(function (child) {
+                if (child.isMesh) {
+                    meshCount++;
+                    var mats = Array.isArray(child.material) ? child.material : [child.material];
+                    mats.forEach(function (m) {
+                        var name = m.name || '(unnamed)';
+                        if (!materialSet[name]) {
+                            materialSet[name] = { type: m.type, color: m.color ? '#' + m.color.getHexString() : 'n/a' };
+                        }
+                    });
+                }
+            });
+            dbgMaterials.textContent = Object.keys(materialSet).length;
+            dbgMeshes.textContent = meshCount;
+            console.log('[Model] Meshes:', meshCount, '| Materials:', Object.keys(materialSet).length);
+            console.table(materialSet);
+        }
+
+        function buildPaths(box) {
+            box.getCenter(modelCenter);
+            var size = new THREE.Vector3();
+            box.getSize(size);
+            modelMaxDim = Math.max(size.x, size.y, size.z);
+
+            var r = modelMaxDim * 0.45;
+
+            console.log('[Path] R:', r.toFixed(2), '| MaxDim:', modelMaxDim.toFixed(2));
+
+            var cp = [], lp = [];
+            var N = 200;
+
+            for (var i = 0; i <= N; i++) {
+                var t = i / N;
+
+                var angle = t * Math.PI * 2 * 2.5;
+
+                var rVar = r * (0.5 + 0.5 * Math.pow(Math.sin(t * Math.PI), 0.5));
+                var yVar = modelMaxDim * (0.05 + 0.3 * t - 0.15 * Math.sin(t * Math.PI * 3));
+
+                cp.push(new THREE.Vector3(
+                    Math.cos(angle) * rVar + modelCenter.x,
+                    yVar + modelCenter.y,
+                    Math.sin(angle) * rVar + modelCenter.z
+                ));
+
+                var laAngle = angle + 0.2;
+                lp.push(new THREE.Vector3(
+                    Math.cos(laAngle) * modelMaxDim * 0.05 + modelCenter.x,
+                    modelCenter.y + Math.sin(t * Math.PI * 6) * modelMaxDim * 0.03,
+                    Math.sin(laAngle) * modelMaxDim * 0.05 + modelCenter.z
+                ));
+            }
+
+            camCurve = new THREE.CatmullRomCurve3(cp, false, 'catmullrom', 0.2);
+            lookAtCurve = new THREE.CatmullRomCurve3(lp, false, 'catmullrom', 0.2);
+        }
+
+        function setCameraAt(p) {
+            if (!camCurve) return;
+            var t = Math.max(0, Math.min(0.9999, p));
+            camera.position.copy(camCurve.getPointAt(t));
+            camera.lookAt(lookAtCurve.getPointAt(t));
+        }
+
+        function onModelLoaded(gltf) {
+            var rawModel = gltf.scene;
+            rawModel.updateMatrixWorld(true);
+
+            var box = new THREE.Box3().setFromObject(rawModel);
+            var center = new THREE.Vector3();
+            var sizeVec = new THREE.Vector3();
+            box.getCenter(center);
+            box.getSize(sizeVec);
+            rawModel.position.set(-center.x, -center.y, -center.z);
+
+            var maxDim = Math.max(sizeVec.x, sizeVec.y, sizeVec.z);
+            var targetScale = 20 / maxDim;
+            modelGroup.scale.set(targetScale, targetScale, targetScale);
+            console.log('[Model] Scale:', targetScale.toFixed(4));
+
+            modelGroup.add(rawModel);
+
+            var newBox = new THREE.Box3().setFromObject(modelGroup);
+            buildPaths(newBox);
+            logModelInfo(modelGroup);
+
+            setCameraAt(0);
+            console.log('[Camera] Start:', camera.position);
+
+            loaderEl.classList.add('hidden');
+            setTimeout(function () { loaderEl.style.display = 'none'; }, 600);
+
+            animate();
+        }
+
+        function loadWithDRACO() {
+            gltfLoader.load('./glb/nuclear_staffing_noHumans.glb', onModelLoaded,
+                function (xhr) {
+                    if (xhr.total) loaderText.textContent = 'YÜKLƏNİR... ' + Math.round((xhr.loaded / xhr.total) * 100) + '%';
+                },
+                function (err) {
+                    console.warn('DRACO failed, retrying...', err);
+                    var plainLoader = new THREE.GLTFLoader();
+                    plainLoader.load('./glb/nuclear_staffing_noHumans.glb', onModelLoaded,
+                        function (xhr2) {
+                            if (xhr2.total) loaderText.textContent = 'YÜKLƏNİR... ' + Math.round((xhr2.loaded / xhr2.total) * 100) + '%';
+                        },
+                        function (err2) {
+                            console.error('Load failed:', err2);
+                            loaderText.textContent = 'XƏTA';
+                        }
+                    );
+                }
+            );
+        }
+        loadWithDRACO();
+
+        var scrollAccum = 0;
+        var MAX_SCROLL = 2000;
+
+        window.addEventListener('wheel', function (e) {
+            e.preventDefault();
+            scrollAccum += e.deltaY;
+            scrollAccum = Math.max(0, Math.min(MAX_SCROLL, scrollAccum));
+            targetProgress = scrollAccum / MAX_SCROLL;
+        }, { passive: false });
+
+        window.addEventListener('touchstart', function (e) { touchY = e.touches[0].clientY; }, { passive: true });
+        var touchY = 0;
+        window.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+            var dy = touchY - e.touches[0].clientY;
+            touchY = e.touches[0].clientY;
+            scrollAccum += dy * 3;
+            scrollAccum = Math.max(0, Math.min(MAX_SCROLL, scrollAccum));
+            targetProgress = scrollAccum / MAX_SCROLL;
+        }, { passive: false });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            progress += (targetProgress - progress) * 0.08;
+            setCameraAt(progress);
+
+            progressFill.style.height = (progress * 100) + '%';
+            dbgScroll.textContent = (progress * 100).toFixed(0) + '%';
+            var c = camera.position;
+            dbgCam.textContent = c.x.toFixed(1) + ', ' + c.y.toFixed(1) + ', ' + c.z.toFixed(1);
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', function () {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    })();
+    </script>
+</body>
+</html>
