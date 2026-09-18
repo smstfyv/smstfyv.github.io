@@ -3270,7 +3270,7 @@ html.preload .mobile-nav__overlay {
     transform: translate3d(0, -40px, 0);
     width: 100%;
     height: 0;
-    background: #ffffff;
+    background: rgba(7, 9, 14, 0.95);
     border-radius: 0;
     opacity: 0;
     transition: opacity .3s var(--ease-default), transform .4s var(--ease-default), height .4s var(--ease-default)
@@ -3280,7 +3280,6 @@ html.preload .mobile-nav__overlay {
     position: absolute;
     top: 0;
     left: 0;
-    transform: translate(-50%);
     width: 100%;
     height: 100%;
     padding: 64px 12px 12px;
@@ -3472,7 +3471,8 @@ html.preload .mobile-nav__overlay {
 }
 
 .hero.hide {
-    opacity: 0
+    opacity: 0;
+    display: none
 }
 
 .hero .hero__content {
@@ -3551,13 +3551,14 @@ html.preload .mobile-nav__overlay {
     gap: var(--space-md);
     margin-top: var(--space-2xl);
     opacity: 0;
-    pointer-events: auto;
+    pointer-events: auto !important;
     transform: perspective(1000px) translate(50%) translate3d(-222.2px, 88px, 0) rotateY(60deg) rotateX(35deg);
     transition: opacity 1.5s cubic-bezier(.16, 1, .3, 1) .3s, transform 1.5s cubic-bezier(.16, 1, .3, 1) .3s
 }
 
 .hero__btn {
-    white-space: nowrap
+    white-space: nowrap;
+    pointer-events: auto !important
 }
 
 .pill-btn--outline {
@@ -5755,5 +5756,14 @@ body.debug canvas {
     .nav-btn {
         width: 42px;
         height: 42px
+    }
+}
+
+@media (max-width:1000px) {
+    .badge{
+        font-size: 1.2rem!important;
+    }
+    .hero__buttons{
+        margin-top: 10px!important;
     }
 }

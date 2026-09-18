@@ -101,6 +101,8 @@ img {
     border: 1px solid rgba(37, 99, 235, 0.2);
 }
 
+
+
 /* Buttons */
 .btn {
     display: inline-block;
@@ -674,7 +676,7 @@ img {
 }
 
 .reveal {
-    opacity: 0;
+    opacity: 1;
     transform: translateY(30px);
     transition: all 0.8s var(--transition-smooth);
 }
@@ -2206,3 +2208,5 @@ header.sub-page.scrolled .nav-dropdown__item:hover {
         display: none;
     }
 }
+
+

@@ -1,66 +1,79 @@
-/* --- PARTNERS SLIDER --- */
+/* --- PARTNERS --- */
 .partners-section {
-    padding: 84px 20px;
+    padding: 84px 0;
     background: #000000;
     overflow: hidden;
 }
 
-.partners-swiper {
+.partners-marquee {
     width: 100%;
     overflow: hidden;
+    mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
 }
 
-.partners-swiper .swiper-wrapper {
-    transition-timing-function: linear;
+.partners-track {
+    display: flex;
+    gap: 16px;
+    width: max-content;
+    animation: partners-scroll 45s linear infinite;
 }
 
-.partners-swiper .swiper-slide {
-    width: auto;
+.partners-marquee:hover .partners-track {
+    animation-play-state: paused;
 }
 
-.partner-logo-item {
-    width: 180px;
-    height: 120px;
+.partner-name-item {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 15px;
-    transition: border-color 0.3s ease;
+    padding: 22px 40px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: border-color 0.3s ease, color 0.3s ease, background 0.3s ease;
+    cursor: default;
+    flex-shrink: 0;
 }
 
-.partner-logo-item:hover {
+.partner-name-item:hover {
     border-color: rgba(37, 99, 235, 0.4);
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(37, 99, 235, 0.06);
 }
 
-.partner-logo-item img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    filter: grayscale(40%) brightness(0.9);
-    transition: filter 0.3s ease;
-    pointer-events: none;
+@keyframes partners-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(calc(-50% - 8px));
+    }
 }
 
-.partner-logo-item:hover img {
-    filter: grayscale(0%) brightness(1);
-}
-
-@media only screen and (max-width: 1025px) {
-    .partner-logo-item {
-        width: 150px;
-        height: 65px;
-        padding: 12px;
+@media only screen and (max-width: 768px) {
+    .partners-track {
+        gap: 10px;
+        animation-duration: 35s;
+    }
+    .partner-name-item {
+        padding: 18px 30px;
+        font-size: 15px;
     }
 }
 
 @media only screen and (max-width: 480px) {
-    .partner-logo-item {
-        width: 120px;
-        height: 55px;
-        padding: 10px;
+    .partners-track {
+        animation-duration: 30s;
+    }
+    .partner-name-item {
+        padding: 15px 24px;
+        font-size: 13px;
     }
 }
 
@@ -340,16 +353,20 @@
     margin-top: 4px;
 }
 
+.form-actions .btn {
+    height: 55px;
+}
+
 .btn-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 14px 24px;
+    padding: 16px 32px;
     background: #2563eb;
     color: #fff;
     border: none;
     border-radius: 10px;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
@@ -387,6 +404,14 @@
     font-size: 0.85rem;
     text-align: center;
     min-height: 20px;
+}
+
+.form-status-error {
+    color: #ef4444;
+}
+
+.form-status-success {
+    color: #10b981;
 }
 
 .form-privacy {

@@ -33,8 +33,8 @@
     ExpiresByType image/png "access plus 1 year"
     ExpiresByType image/jpeg "access plus 1 year"
     ExpiresByType image/svg+xml "access plus 1 year"
-    ExpiresByType model/gltf-binary "access plus 1 year"
-    ExpiresByType application/octet-stream "access plus 1 year"
+    ExpiresByType model/gltf-binary "access plus 1 day"
+    ExpiresByType application/octet-stream "access plus 1 day"
     ExpiresByType application/wasm "access plus 1 year"
     ExpiresByType font/woff2 "access plus 1 year"
     ExpiresByType application/font-woff2 "access plus 1 year"
@@ -44,3 +44,5 @@
 RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+ErrorDocument 404 /404.html
